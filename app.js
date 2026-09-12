@@ -1304,8 +1304,8 @@ function bindEvents() {
   $('#btn-token-save').addEventListener('click', replaceToken);
   /* 确认框 */
   $('#btn-confirm-ok').addEventListener('click', () => {
-    const box = $('#confirm-input');
-    settleConfirm(!box.hidden ? box.value : true);
+    const wrap = $('#confirm-input-box');
+    settleConfirm(!wrap.hidden ? $('#confirm-input').value : true);
   });
   $('#btn-confirm-cancel').addEventListener('click', () => settleConfirm(null));
   $('#confirm-input').addEventListener('keydown', e => {
