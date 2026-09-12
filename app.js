@@ -1284,6 +1284,10 @@ function bindEvents() {
   $('#btn-next-day').addEventListener('click', () => selectDate(addDaysKey(S.selDate, 1)));
   $('#btn-today').addEventListener('click', () => selectDate(todayKey()));
   $('#date-input').addEventListener('change', e => { if (e.target.value) selectDate(e.target.value); });
+  $('#date-display').addEventListener('click', () => {
+    const inp = $('#date-input');
+    try { if (inp.showPicker) inp.showPicker(); else inp.focus(); } catch (e) { }
+  });
   /* 心情 / 标签 / 日记 */
   $('#mood-row').addEventListener('click', e => {
     const b = e.target.closest('.mood-btn'); if (!b) return;
@@ -1396,4 +1400,16 @@ function selectDate(k) {
 }
 
 /* ============ 启动 ============ */
+/* 自诊断模式:访问地址后加 &diag=1(或 ?diag=1),标签页标题每秒报告屏幕中心的顶层元素与光标;
+   若标题时间停止跳动 = 页面主线程被卡死;若持续显示某个元素 = 它就是拦截点击的元凶 */
+if (location.search.indexOf('diag=1') > -1) {
+  setInterval(() => {
+    try {
+      const e = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);
+      const d = new Date();
+      document.title = pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds()) +
+        ' | 顶层元素:' + (e ? e.tagName + (e.id ? '#' + e.id : '') + (typeof e.className === 'string' && e.className ? '.' + e.className.split(' ')[0] : '') + ' [光标:' + getComputedStyle(e).cursor + ']' : 'null');
+    } catch (e) { }
+  }, 1000);
+}
 boot();

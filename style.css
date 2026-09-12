@@ -222,7 +222,7 @@ code{background:var(--bg-soft);border:1px solid var(--line);border-radius:6px;pa
   background:var(--card-2);border:1px solid var(--line);border-radius:10px;
   padding:6px 14px;display:flex;align-items:baseline;gap:8px;font-weight:600;font-size:15px;
 }
-.date-input-overlay{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0}
+.date-input-hidden{position:absolute;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0;padding:0}
 .date-display:hover{border-color:var(--accent)}
 .date-display #date-week{font-size:12.5px;color:var(--ink-2);font-weight:400}
 .btn-today{
