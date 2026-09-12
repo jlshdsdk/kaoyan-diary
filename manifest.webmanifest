@@ -1,0 +1,14 @@
+{
+  "name": "研途日记 · 考研学习日记",
+  "short_name": "研途日记",
+  "description": "记录考研每一天:日记、学习时长打卡、热力图(数学 / 英语 / 408)",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f3ee",
+  "theme_color": "#4657ce",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f3ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14151a" media="(prefers-color-scheme: dark)">
+<meta name="description" content="研途日记 —— 记录考研每一天:日记、学习时长打卡、热力图(数学 / 英语 / 408)">
+<title>研途日记 · 考研学习日记</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%235a6ce0'/%3E%3Cstop offset='1' stop-color='%233a49a8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='128' height='128' rx='28' fill='url(%23g)'/%3E%3Ctext x='64' y='88' font-size='68' text-anchor='middle' fill='%23fff' font-family='Kaiti SC,KaiTi,serif' font-weight='700'%3E%E7%A0%94%3C/text%3E%3Ccircle cx='101' cy='29' r='10' fill='%23e8935a'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ==================== 登录视图 ==================== -->
+<section id="v-login" class="view">
+  <div class="login-deco" aria-hidden="true">
+    <span class="deco-char">研</span>
+    <span class="deco-sym" style="--x:12%;--y:18%;--d:0s">∫</span>
+    <span class="deco-sym" style="--x:82%;--y:14%;--d:1.2s">∑</span>
+    <span class="deco-sym" style="--x:70%;--y:78%;--d:.6s">π</span>
+    <span class="deco-sym" style="--x:20%;--y:72%;--d:1.8s">ab</span>
+    <span class="deco-sym" style="--x:46%;--y:8%;--d:.3s">√</span>
+    <span class="deco-sym" style="--x:90%;--y:46%;--d:2.2s">Δ</span>
+    <span class="deco-sym" style="--x:6%;--y:44%;--d:1.5s">word</span>
+  </div>
+
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="brand-row">
+        <div class="logo-mark">研</div>
+        <div>
+          <h1 class="brand-title">研途日记</h1>
+          <p class="brand-sub">记录每一天的坚持 · 数学 / 英语 / 408</p>
+        </div>
+      </div>
+
+      <form id="form-login" autocomplete="off">
+        <label class="field">
+          <span class="field-label">账号</span>
+          <input id="li-user" type="text" placeholder="用户名" autocapitalize="none" autocomplete="username" required>
+        </label>
+        <label class="field">
+          <span class="field-label">密码</span>
+          <input id="li-pass" type="password" placeholder="密码" autocomplete="current-password" required>
+        </label>
+        <label class="remember-row">
+          <input id="li-remember" type="checkbox" checked>
+          <span>记住登录(仅本机)</span>
+        </label>
+        <button id="btn-login" class="btn btn-primary btn-block" type="submit">登 录</button>
+        <p id="li-err" class="form-err" hidden></p>
+      </form>
+
+      <div class="login-links">
+        <button class="linklike" id="lnk-wizard" type="button">首次使用 · 初始化向导</button>
+        <span class="dot-sep"></span>
+        <button class="linklike" id="lnk-demo" type="button">先试试演示</button>
+        <span class="dot-sep"></span>
+        <button class="linklike" id="lnk-recover" type="button">忘记密码</button>
+      </div>
+      <p class="login-foot">日记加密同步到你自己的 GitHub 私有仓库 · 换设备登录同一账号即可继续</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 主应用视图 ==================== -->
+<section id="v-app" class="view" hidden>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand-row slim">
+        <div class="logo-mark sm">研</div>
+        <div>
+          <div class="brand-name">研途日记</div>
+          <div class="brand-goal" id="brand-goal">计算机 · 数学一 · 英语一 · 408</div>
+        </div>
+      </div>
+      <div class="top-right">
+        <span id="pill-countdown" class="pill-countdown" title="距离考研初试(可在设置中修改日期)">⏳ --</span>
+        <button id="sync-state" class="sync-state" type="button"><i class="sync-dot"></i><span id="sync-text">…</span></button>
+        <button id="btn-theme" class="icon-btn" type="button" title="切换深浅主题">🌓</button>
+        <div class="user-box">
+          <button id="user-menu-btn" class="user-btn" type="button"><span class="avatar" id="user-avatar">研</span><span id="user-name">…</span><span class="caret">▾</span></button>
+          <div id="user-menu" class="user-menu" hidden>
+            <button class="menu-item" data-act="settings" type="button">⚙️ 设置与偏好</button>
+            <button class="menu-item admin-only" data-act="admin" type="button">👥 账号管理</button>
+            <button class="menu-item" data-act="password" type="button">🔑 修改密码</button>
+            <button class="menu-item" data-act="export" type="button">📦 导出备份</button>
+            <hr class="menu-hr">
+            <button class="menu-item danger" data-act="logout" type="button">↩ 退出登录</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="demo-banner" class="demo-banner" hidden>演示模式:数据仅保存在本机浏览器,不会同步。退出后可在登录页进入正式模式。</div>
+  </header>
+
+  <main class="layout">
+    <!-- 左列:日记 + 打卡 + 往期 -->
+    <div class="col-main">
+      <section class="card" id="card-diary">
+        <div class="date-nav">
+          <button id="btn-prev-day" class="icon-btn" type="button" title="前一天">‹</button>
+          <button id="date-display" class="date-display" type="button" title="选择日期">
+            <b id="date-main">--</b><span id="date-week"></span>
+          </button>
+          <input id="date-input" type="date" class="date-input-overlay" aria-label="选择日期">
+          <button id="btn-today" class="btn-today" type="button" hidden>回到今天</button>
+          <button id="btn-next-day" class="icon-btn" type="button" title="后一天">›</button>
+        </div>
+
+        <div class="mood-row" id="mood-row" title="今天的心情"></div>
+        <div class="tag-row" id="tag-row"></div>
+
+        <textarea id="diary-text" class="diary-text" rows="8"
+          placeholder="今天学了什么、有什么感悟、踩了哪些坑……写下来吧 ✍️&#10;&#10;小建议:记录错题编号、页码进度,复习时会感谢今天的自己。"></textarea>
+        <div class="diary-foot">
+          <span id="word-count">0 字</span>
+          <span id="diary-hint" class="diary-hint">自动保存</span>
+        </div>
+      </section>
+
+      <section class="card" id="card-time">
+        <div class="card-head">
+          <h2 id="card-time-title">今日学习打卡</h2>
+          <span class="today-total" id="today-total-badge">合计 0 分钟</span>
+        </div>
+
+        <div class="timer-box" id="timer-box">
+          <div class="timer-left">
+            <div class="timer-display" id="timer-display">00:00</div>
+            <div class="timer-status" id="timer-status">选择科目,开始专注</div>
+          </div>
+          <div class="timer-right">
+            <div class="timer-subjects" id="timer-subjects"></div>
+            <div class="timer-btns">
+              <button id="btn-timer-main" class="btn btn-primary" type="button">开始计时</button>
+              <button id="btn-timer-stop" class="btn btn-ghost" type="button" hidden>结束并计入</button>
+              <button id="btn-timer-discard" class="btn btn-plain" type="button" hidden>放弃</button>
+            </div>
+          </div>
+        </div>
+
+        <p id="timer-box-hint" class="set-hint" hidden>⏱️ 专注计时只在「今天」可用;查看历史日期时,可直接补录时长。</p>
+
+        <div id="subject-rows"></div>
+
+        <div class="day-goal-row">
+          <div class="day-goal-bar"><i id="day-goal-fill"></i></div>
+          <div class="day-goal-text" id="day-goal-text">距今日目标还差 -- 分钟</div>
+        </div>
+      </section>
+
+      <section class="card" id="card-archive">
+        <div class="card-head">
+          <h2>往期日记</h2>
+          <input id="arch-search" class="search-input" type="search" placeholder="搜索日记…">
+        </div>
+        <div id="arch-list" class="arch-list"></div>
+        <button id="arch-more" class="btn btn-ghost btn-block" type="button" hidden>显示更早</button>
+      </section>
+    </div>
+
+    <!-- 右列:统计 + 热力图 + 每日一句 -->
+    <div class="col-side">
+      <section class="card" id="card-stats">
+        <div class="card-head"><h2>学习统计</h2></div>
+        <div class="stat-grid">
+          <div class="stat-cell"><b id="st-today">0</b><span>今日(分钟)</span></div>
+          <div class="stat-cell"><b id="st-week">0</b><span>本周(小时)</span></div>
+          <div class="stat-cell"><b id="st-streak">0</b><span>连续(天)</span></div>
+          <div class="stat-cell"><b id="st-total">0</b><span>累计(小时)</span></div>
+        </div>
+        <div class="subhead">近 7 日</div>
+        <div class="bars-wrap">
+          <div id="bars-7d" class="bars"></div>
+          <div class="legend">
+            <span><i class="lg lg-math"></i>数学</span>
+            <span><i class="lg lg-eng"></i>英语</span>
+            <span><i class="lg lg-cs"></i>408</span>
+          </div>
+        </div>
+        <div class="subhead">本周科目分布</div>
+        <div class="donut-row">
+          <div id="donut-week" class="donut"><span id="donut-center">--</span></div>
+          <div id="donut-legend" class="donut-legend"></div>
+        </div>
+      </section>
+
+      <section class="card" id="card-heat">
+        <div class="card-head"><h2>学习热力图</h2><span class="heat-range">过去一年</span></div>
+        <div class="hm-flex">
+          <div class="hm-days" aria-hidden="true"><span>一</span><span></span><span>三</span><span></span><span>五</span><span></span><span>日</span></div>
+          <div class="hm-wrap"><div class="hm-inner"><div class="hm-months" id="hm-months"></div><div id="heatmap" class="hm-grid"></div></div></div>
+        </div>
+        <div class="heat-legend"><span>少</span><i class="hm-cell l0"></i><i class="hm-cell l1"></i><i class="hm-cell l2"></i><i class="hm-cell l3"></i><i class="hm-cell l4"></i><span>多</span></div>
+      </section>
+
+      <section class="card" id="card-quote">
+        <div class="quote-mark">❝</div>
+        <p id="quote-text">——</p>
+        <p id="quote-sub" class="quote-sub">研途 · 每日一句</p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="app-foot">研途日记 · 数据加密同步于你的私有仓库 · 愿你合上笔盖的刹那,有侠客收剑入鞘的骄傲</footer>
+</section>
+
+<!-- ==================== 初始化向导 ==================== -->
+<div class="modal-overlay" id="m-wizard" hidden>
+  <div class="modal-card wizard">
+    <button class="modal-x" data-close type="button">✕</button>
+    <div class="wz-dots" id="wz-dots"><i class="on"></i><i></i><i></i><i></i></div>
+
+    <div class="wz-step" data-step="1">
+      <h2>欢迎使用「研途日记」🏗️</h2>
+      <p class="wz-p">第一次使用需要 1 分钟初始化,之后在任何设备上只需<strong>账号 + 密码</strong>即可登录。</p>
+      <ul class="wz-list">
+        <li>📔 <strong>日记存在你自己的 GitHub 私有仓库</strong>(jlshdsdk/kaoyan-diary-data),别人无法查看;</li>
+        <li>🔒 你的密码只用来在本机加密数据,<strong>不会上传</strong>,服务器也没有你的密码;</li>
+        <li>🎫 需要一个 GitHub 令牌(Token)让网站代你读写数据仓库,只需配置一次,它会加密后保存;</li>
+        <li>初始化后,你就是管理员,可以在「设置 → 账号管理」里为朋友创建独立账号。</li>
+      </ul>
+    </div>
+
+    <div class="wz-step" data-step="2" hidden>
+      <h2>① 创建管理员账号</h2>
+      <p class="wz-p">这是你的最高权限账号,可以管理其他账号。</p>
+      <label class="field"><span class="field-label">用户名(2-20位,字母/数字/_/-)</span>
+        <input id="wz-user" type="text" autocapitalize="none" placeholder="例如:yanfriend"></label>
+      <label class="field"><span class="field-label">密码(至少 8 位,建议混合字母数字)</span>
+        <input id="wz-pass" type="password" placeholder="设置一个安全密码"></label>
+      <div class="pw-meter"><i id="wz-pw-bar"></i><span id="wz-pw-text"></span></div>
+      <label class="field"><span class="field-label">确认密码</span>
+        <input id="wz-pass2" type="password" placeholder="再输入一次"></label>
+      <p class="form-err" id="wz-err2" hidden></p>
+    </div>
+
+    <div class="wz-step" data-step="3" hidden>
+      <h2>② 配置 GitHub 令牌</h2>
+      <p class="wz-p">令牌只授权读写这两个仓库:<code>kaoyan-diary</code>(账号信息)与 <code>kaoyan-diary-data</code>(日记数据)。</p>
+      <div class="tk-guide">
+        <b>推荐方式(权限最小):</b>
+        <ol>
+          <li>打开 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a></li>
+          <li>Repository access 选 <strong>Only select repositories</strong>,勾选 <code>kaoyan-diary</code> 和 <code>kaoyan-diary-data</code></li>
+          <li>Permissions 中 <strong>Contents → Read and write</strong>,其余保持 No access</li>
+          <li>生成后复制 <code>github_pat_</code> 开头的令牌,粘贴到下面</li>
+        </ol>
+        <details><summary>快捷方式(经典令牌,权限较大)</summary>
+          打开 <a href="https://github.com/settings/tokens/new?scopes=repo&description=yantu-diary" target="_blank" rel="noopener">生成经典令牌(已自动勾选 repo 权限)</a>,生成后粘贴到下面。
+        </details>
+      </div>
+      <label class="field"><span class="field-label">粘贴令牌</span>
+        <textarea id="wz-token" rows="3" placeholder="github_pat_… 或 ghp_…" autocapitalize="off" spellcheck="false"></textarea></label>
+      <div class="tk-status" id="wz-tk-status"></div>
+      <button id="btn-wz-validate" class="btn btn-ghost" type="button">验证令牌</button>
+      <p class="form-err" id="wz-err3" hidden></p>
+    </div>
+
+    <div class="wz-step" data-step="4" hidden>
+      <h2>③ 完成 🎉</h2>
+      <p class="wz-p" id="wz-done-text">一切就绪!点击下面按钮完成初始化。</p>
+      <ul class="wz-list">
+        <li>令牌将用你的密码加密(AES-GCM)后保存,忘记密码可用「忘记密码」重新配置;</li>
+        <li>日记数据保存在私有仓库,记得偶尔在「设置 → 数据」里导出备份。</li>
+      </ul>
+      <p class="form-err" id="wz-err4" hidden></p>
+    </div>
+
+    <div class="wz-nav">
+      <button id="btn-wz-prev" class="btn btn-plain" type="button">上一步</button>
+      <button id="btn-wz-next" class="btn btn-primary" type="button">下一步</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 忘记密码 / 恢复 ==================== -->
+<div class="modal-overlay" id="m-recover" hidden>
+  <div class="modal-card">
+    <button class="modal-x" data-close type="button">✕</button>
+    <h2>重置账号(管理员恢复)</h2>
+    <p class="wz-p">密码无法找回(它从不离开你的设备)。但只要重新提供一个有效令牌,即可重置管理员密码。</p>
+    <label class="field"><span class="field-label">要重置的账号</span>
+      <input id="rc-user" type="text" autocapitalize="none" placeholder="用户名"></label>
+    <label class="field"><span class="field-label">新的密码</span>
+      <input id="rc-pass" type="password" placeholder="至少 8 位"></label>
+    <label class="field"><span class="field-label">确认新密码</span>
+      <input id="rc-pass2" type="password"></label>
+    <label class="field"><span class="field-label">GitHub 令牌(需能读写上述两个仓库,获取方式见初始化向导第③步)</span>
+      <textarea id="rc-token" rows="3" placeholder="github_pat_… 或 ghp_…" spellcheck="false"></textarea></label>
+    <p class="form-err" id="rc-err" hidden></p>
+    <button id="btn-recover" class="btn btn-primary btn-block" type="button">重置并登录</button>
+  </div>
+</div>
+
+<!-- ==================== 设置 ==================== -->
+<div class="modal-overlay" id="m-settings" hidden>
+  <div class="modal-card wide">
+    <button class="modal-x" data-close type="button">✕</button>
+    <div class="set-grid">
+      <nav class="set-nav" id="set-nav">
+        <button class="set-tab on" data-tab="account" type="button">👤 我的账号</button>
+        <button class="set-tab admin-only" data-tab="users" type="button">👥 账号管理</button>
+        <button class="set-tab" data-tab="prefs" type="button">🎯 学习偏好</button>
+        <button class="set-tab" data-tab="data" type="button">🗄️ 数据与令牌</button>
+      </nav>
+
+      <div class="set-panes">
+        <div class="set-pane" data-pane="account">
+          <h3>我的账号</h3>
+          <div id="set-user-info" class="info-list"></div>
+          <h3>修改密码</h3>
+          <label class="field"><span class="field-label">当前密码</span><input id="pw-old" type="password" autocomplete="off"></label>
+          <label class="field"><span class="field-label">新密码(至少 8 位)</span><input id="pw-new" type="password" autocomplete="off"></label>
+          <label class="field"><span class="field-label">确认新密码</span><input id="pw-new2" type="password" autocomplete="off"></label>
+          <p class="form-err" id="pw-err" hidden></p>
+          <button id="btn-changepw" class="btn btn-primary" type="button">修改密码</button>
+        </div>
+
+        <div class="set-pane" data-pane="users" hidden>
+          <h3>账号管理</h3>
+          <p class="set-hint">你创建的每个账号都有独立的日记与学习进度。账号密码仅在创建/重置时由你设置。</p>
+          <div id="admin-list" class="admin-list"></div>
+          <h3>创建新账号</h3>
+          <div class="au-form">
+            <label class="field"><span class="field-label">用户名(2-20位)</span><input id="au-user" type="text" autocapitalize="none"></label>
+            <label class="field"><span class="field-label">初始密码(至少 8 位)</span><input id="au-pass" type="text" placeholder="建议告知对方后让其自行修改"></label>
+            <label class="field"><span class="field-label">备注名(可选,仅显示)</span><input id="au-note" type="text" placeholder="例如:小王"></label>
+            <p class="form-err" id="au-err" hidden></p>
+            <button id="btn-au-create" class="btn btn-primary" type="button">创建账号</button>
+          </div>
+        </div>
+
+        <div class="set-pane" data-pane="prefs" hidden>
+          <h3>学习偏好</h3>
+          <label class="field"><span class="field-label">考研初试日期</span><input id="set-exam-date" type="date"></label>
+          <label class="field"><span class="field-label">目标方向(显示在顶部)</span><input id="set-goal-text" type="text" placeholder="例如:计算机 · 数学一 · 英语一 · 408"></label>
+          <div class="goal-grid">
+            <label class="field"><span class="field-label">数学目标(分钟/天)</span><input id="set-goal-math" type="number" min="0" max="720" step="15"></label>
+            <label class="field"><span class="field-label">英语目标(分钟/天)</span><input id="set-goal-eng" type="number" min="0" max="720" step="15"></label>
+            <label class="field"><span class="field-label">408目标(分钟/天)</span><input id="set-goal-cs" type="number" min="0" max="720" step="15"></label>
+          </div>
+          <button id="btn-save-prefs" class="btn btn-primary" type="button">保存偏好</button>
+        </div>
+
+        <div class="set-pane" data-pane="data" hidden>
+          <h3>备份与恢复</h3>
+          <p class="set-hint">日记非常重要,建议每月导出一次备份。导入会把备份中的内容与当前数据按修改时间合并。</p>
+          <div class="btn-row">
+            <button id="btn-export" class="btn btn-ghost" type="button">📦 导出备份(JSON)</button>
+            <label class="btn btn-ghost" for="import-file">📥 导入备份</label>
+            <input id="import-file" type="file" accept=".json,application/json" hidden>
+          </div>
+          <h3>同步与令牌</h3>
+          <div id="set-sync-info" class="info-list"></div>
+          <label class="field"><span class="field-label">更换 GitHub 令牌(其他账号将标记为需重置密码)</span>
+            <textarea id="set-token" rows="3" placeholder="粘贴新令牌后点击右侧按钮验证并保存" spellcheck="false"></textarea></label>
+          <p class="form-err" id="tk-err" hidden></p>
+          <button id="btn-token-save" class="btn btn-ghost" type="button">验证并保存新令牌</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 确认框 ==================== -->
+<div class="modal-overlay" id="m-confirm" hidden>
+  <div class="modal-card narrow">
+    <h3 id="confirm-title">确认</h3>
+    <p id="confirm-text" class="confirm-text"></p>
+    <div id="confirm-input-box" hidden>
+      <label class="field" style="margin-top:12px"><span class="field-label" id="confirm-input-label"></span>
+        <input id="confirm-input" type="text" autocomplete="off"></label>
+    </div>
+    <div class="btn-row end">
+      <button id="btn-confirm-cancel" class="btn btn-plain" type="button">取消</button>
+      <button id="btn-confirm-ok" class="btn btn-danger" type="button">确定</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-root" class="toast-root"></div>
+<div id="tooltip" class="tooltip" hidden></div>
+
+<script src="app.js" defer></script>
+</body>
+</html>
