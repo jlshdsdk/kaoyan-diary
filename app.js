@@ -1067,6 +1067,7 @@ function wzShow(step) {
 async function wzNext() {
   const err3 = $('#wz-err3'), err2 = $('#wz-err2'), err4 = $('#wz-err4');
   err2.hidden = err3.hidden = err4.hidden = true;
+  if (WZ.step === 1) { wzShow(2); return; }
   if (WZ.step === 2) {
     const name = $('#wz-user').value.trim(), p1 = $('#wz-pass').value, p2 = $('#wz-pass2').value;
     if (!/^[a-zA-Z0-9_-]{2,20}$/.test(name)) { err2.textContent = '用户名需 2-20 位,仅限字母/数字/_/-'; err2.hidden = false; return; }
