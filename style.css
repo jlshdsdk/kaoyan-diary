@@ -518,8 +518,14 @@ code{background:var(--bg-soft);border:1px solid var(--line);border-radius:6px;pa
 }
 @media (max-width:640px){
   body{font-size:14px}
-  .topbar-inner{padding:8px 12px}
+  .topbar-inner{padding:8px 10px;gap:6px}
+  #sync-text{display:none}
+  .brand-name{white-space:nowrap;font-size:14px}
+  .pill-countdown{font-size:10.5px;padding:3px 8px}
+  .user-btn{padding:3px 7px 3px 3px;gap:5px}
   #user-name,.caret{display:none}
+  .sync-state{padding:4px 3px}
+  #btn-theme{padding:5px 6px}
   .layout{padding:14px 12px 30px;gap:14px}
   .col-main,.col-side{gap:14px}
   .card{padding:15px 14px;border-radius:13px}
