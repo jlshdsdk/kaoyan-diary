@@ -13,6 +13,7 @@ const CFG = {
   BRANCH: 'main',
   ITER: 310000,               // PBKDF2 迭代次数
   API: 'https://api.github.com',
+  VER: '1.0.6',               // 版本号(页脚可见,用于确认设备加载的是新版本)
 };
 const MOODS = ['😄', '🙂', '😐', '😪', '🤯', '😤', '🥲', '💪'];
 const TAGS = ['刷题', '背单词', '模考', '复盘', '错题整理', '状态好', '状态差', '进度落后', '有突破', '想放弃'];
@@ -71,6 +72,16 @@ function fmtMin(m) {
 function fmtH(m) { return (m / 60).toFixed(1).replace(/\.0$/, '') + 'h'; }
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+/* 本地存储安全封装(隐私模式/配额满时降级,不让界面崩溃) */
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+function lsDel(k) { try { localStorage.removeItem(k); } catch (e) { } }
+/* 恢复登录按钮为可点击状态(防止登录流程中断后按钮永久禁用) */
+function resetLoginBtn() {
+  const b = $('#btn-login');
+  if (b) { b.disabled = false; b.textContent = '登 录'; }
+}
 
 /* ============ 2. 编解码 ============ */
 const _te = new TextEncoder(), _td = new TextDecoder();
@@ -218,7 +229,7 @@ const S = {
   view: 'login', demo: false,
   user: null, role: null, note: null, token: null, encCtx: null,
   data: null, dataSha: null, dirty: false, saving: false, lastSync: 0,
-  selDate: todayKey(), timerSub: localStorage.getItem('kyd_tsub') || 'math',
+  selDate: todayKey(), timerSub: lsGet('kyd_tsub') || 'math',
   today: todayKey(),
 };
 let T = null;           // 计时器 {sub,start,pausedMs,running,pausedAt}
@@ -271,17 +282,35 @@ function showView(v) {
 async function boot() {
   initTheme();
   bindEvents();
+  // 全局错误可见化:任何脚本错误都以红字提示,不再无声卡住
+  window.addEventListener('error', e => {
+    (window.__errs = window.__errs || []).push('E:' + e.message);
+    if (S.view === 'app') toast('脚本错误:' + e.message, 'err');
+  });
+  window.addEventListener('unhandledrejection', e => {
+    const m = (e.reason && e.reason.message) || String(e.reason);
+    (window.__errs = window.__errs || []).push('P:' + m);
+    if (S.view === 'app') toast('异步错误:' + m, 'err');
+  });
+  $$('.app-ver').forEach(n => n.textContent = 'v' + CFG.VER);
   renderMoodRow(); renderTagRow(); renderQuote();
-  const creds = localStorage.getItem('kyd_creds');
+  const creds = lsGet('kyd_creds');
   if (creds) {
     try {
       const c = JSON.parse(creds);
       S.user = c.user; S.role = c.role; S.token = c.token; S.note = c.note;
       await enterApp();
       return;
-    } catch (e) { localStorage.removeItem('kyd_creds'); }
+    } catch (e) {
+      lsDel('kyd_creds');
+      showView('login');
+      const err = $('#li-err');
+      err.textContent = '自动登录失败:' + (e && e.message ? e.message : e) + ',请手动登录';
+      err.hidden = false;
+    }
   }
   showView('login');
+  resetLoginBtn();
   // 首次使用自动弹向导
   try {
     const acc = await readAccounts();
@@ -297,7 +326,7 @@ async function enterApp() {
   $('#user-name').textContent = S.note || S.user;
   $('#user-avatar').textContent = (S.note || S.user || '研').charAt(0).toUpperCase();
   if (S.demo) {
-    S.data = JSON.parse(localStorage.getItem('kyd_demo_data') || 'null') || freshData('demo');
+    S.data = JSON.parse(lsGet('kyd_demo_data') || 'null') || freshData('demo');
     ensureMeta(); S.selDate = todayKey();
     restoreTimer();
     renderAll(); setSync('demo');
@@ -312,7 +341,7 @@ async function enterApp() {
 async function loadUserData() {
   try {
     const remote = await getContents(CFG.DATA_REPO, `data/${S.user}.json`, S.token);
-    const cached = localStorage.getItem('kyd_data_' + S.user);
+    const cached = lsGet('kyd_data_' + S.user);
     if (remote) {
       S.data = remote.data;
       S.dataSha = remote.sha;
@@ -333,7 +362,7 @@ async function loadUserData() {
   } catch (e) {
     if (e instanceof AuthError) { handleAuthFail(); return; }
     // 网络失败:先用本地缓存进入
-    const cached = localStorage.getItem('kyd_data_' + S.user);
+    const cached = lsGet('kyd_data_' + S.user);
     S.data = cached ? JSON.parse(cached) : freshData(S.user);
     ensureMeta();
     setSync('offline');
@@ -341,19 +370,25 @@ async function loadUserData() {
   }
 }
 function handleAuthFail() {
-  localStorage.removeItem('kyd_creds');
+  lsDel('kyd_creds');
   showView('login');
-  toast('登录令牌已失效,请重新登录或让管理员更换令牌', 'err');
-  if (S.role === 'admin') { $('#rc-user').value = S.user; openModal('m-recover'); }
+  const err = $('#li-err');
+  err.textContent = '登录状态已失效(令牌被 GitHub 拒绝),请重新登录;若反复出现,请用「忘记密码」重新配置令牌';
+  err.hidden = false;
+  if (S.user) $('#li-user').value = S.user;
+  resetLoginBtn();
+  if (S.role === 'admin') $('#rc-user').value = S.user;
 }
 function logout() {
-  localStorage.removeItem('kyd_creds');
-  T = null; localStorage.removeItem('kyd_timer_' + S.user);
+  lsDel('kyd_creds');
+  T = null; lsDel('kyd_timer_' + S.user);
   Object.assign(S, { user: null, role: null, token: null, data: null, dataSha: null, dirty: false, demo: false, note: null });
   stopClock();
   showView('login');
   setSync('idle');
   $('#li-pass').value = '';
+  $('#li-err').hidden = true;
+  resetLoginBtn();
   $('#li-user').focus();
 }
 
@@ -367,9 +402,9 @@ async function doLogin(name, pass, remember) {
   if (!res) throw new Error('密码错误');
   S.user = name; S.role = u.role || 'member'; S.note = u.note || '';
   S.token = res.token; S.encCtx = res.ctx;
-  if (remember) localStorage.setItem('kyd_creds', JSON.stringify({ user: name, role: S.role, note: S.note, token: res.token }));
+  if (remember) lsSet('kyd_creds', JSON.stringify({ user: name, role: S.role, note: S.note, token: res.token }));
   await enterApp();
-  toast('欢迎回来,' + (S.note || name) + ' 👋');
+  if (S.view === 'app') toast('欢迎回来,' + (S.note || name) + ' 👋');
 }
 function enterDemo() {
   S.demo = true; S.user = '演示'; S.role = 'member';
@@ -387,15 +422,15 @@ async function doRecover(name, pass, token) {
   S.user = name; S.role = acc.users[name].role || 'admin'; S.note = acc.users[name].note || '';
   S.token = token;
   const res2 = await openToken(pass, enc); S.encCtx = res2.ctx;
-  localStorage.setItem('kyd_creds', JSON.stringify({ user: name, role: S.role, note: S.note, token }));
+  lsSet('kyd_creds', JSON.stringify({ user: name, role: S.role, note: S.note, token }));
   await enterApp();
   toast('密码已重置并登录 ✅');
 }
 
 /* ============ 8. 数据同步 ============ */
 function markDirtyLight() {
-  if (S.demo) { localStorage.setItem('kyd_demo_data', JSON.stringify(S.data)); return; }
-  localStorage.setItem('kyd_data_' + S.user, JSON.stringify(S.data));
+  if (S.demo) { lsSet('kyd_demo_data', JSON.stringify(S.data)); return; }
+  lsSet('kyd_data_' + S.user, JSON.stringify(S.data));
   S.dirty = true; setSync('dirty');
   clearTimeout(saveT); saveT = setTimeout(() => syncNow(), 3500);
 }
@@ -416,11 +451,11 @@ async function syncNow(keepalive = false) {
       const merged = mergeData(remote ? remote.data : freshData(S.user), S.data);
       res = await putContents(CFG.DATA_REPO, `data/${S.user}.json`, merged, remote ? remote.sha : null, S.token, 'diary: 合并同步 ' + S.user);
       S.data = merged; ensureMeta();
-      localStorage.setItem('kyd_data_' + S.user, JSON.stringify(S.data));
+      lsSet('kyd_data_' + S.user, JSON.stringify(S.data));
       renderAll();
     }
     S.dataSha = res.sha; S.dirty = false; S.lastSync = Date.now();
-    localStorage.setItem('kyd_data_' + S.user, JSON.stringify(S.data));
+    lsSet('kyd_data_' + S.user, JSON.stringify(S.data));
     setSync('ok'); updateDiaryHint();
   } catch (e) {
     if (e instanceof AuthError) { handleAuthFail(); return; }
@@ -463,10 +498,17 @@ function flushOnHide() {
   } catch (e) { }
 }
 
-/* ============ 9. 渲染总入口 ============ */
+/* ============ 9. 渲染总入口(单卡出错不拖垮整页) ============ */
 function renderAll() {
-  renderHeader(); renderDiary(); renderTimeCard(); renderTimer();
-  renderStats(); renderHeatmap(); renderArchive(); updateDiaryHint();
+  const steps = [['顶栏', renderHeader], ['日记', renderDiary], ['打卡', renderTimeCard], ['计时', renderTimer], ['统计', renderStats], ['热力图', renderHeatmap], ['往期', renderArchive]];
+  for (const [name, fn] of steps) {
+    try { fn(); } catch (e) {
+      console.error('渲染失败[' + name + ']', e);
+      (window.__errs = window.__errs || []).push('R:' + name + ':' + e.message);
+      toast(name + '渲染出错:' + e.message, 'err');
+    }
+  }
+  updateDiaryHint();
 }
 function renderHeader() {
   $('#brand-goal').textContent = S.data.meta.goalText || '计算机 · 数学一 · 英语一 · 408';
@@ -656,14 +698,14 @@ async function discardTimer() {
   T = null; persistTimer(); stopClock(); renderTimer();
 }
 function persistTimer() {
-  if (T) localStorage.setItem('kyd_timer_' + S.user, JSON.stringify(T));
-  else localStorage.removeItem('kyd_timer_' + S.user);
+  if (T) lsSet('kyd_timer_' + S.user, JSON.stringify(T));
+  else lsDel('kyd_timer_' + S.user);
 }
 let clockI = null;
 function startClock() { if (!clockI) clockI = setInterval(() => { renderTimer(); if (T && T.running) renderTimeCard(); }, 1000); }
 function stopClock() { clearInterval(clockI); clockI = null; }
 function restoreTimer() {
-  const raw = localStorage.getItem('kyd_timer_' + S.user);
+  const raw = lsGet('kyd_timer_' + S.user);
   if (!raw) { renderTimer(); return; }
   try {
     T = JSON.parse(raw);
@@ -929,7 +971,7 @@ async function changePassword() {
       const { enc, ctx } = await sealToken(n1, S.token);
       await mutateAccounts(S.token, users => { users[S.user].enc = enc; });
       S.encCtx = ctx;
-      localStorage.setItem('kyd_creds', JSON.stringify({ user: S.user, role: S.role, note: S.note, token: S.token }));
+      lsSet('kyd_creds', JSON.stringify({ user: S.user, role: S.role, note: S.note, token: S.token }));
     }
     $('#pw-old').value = $('#pw-new').value = $('#pw-new2').value = '';
     toast('密码修改成功,本机已记住新凭据 ✅');
@@ -1028,7 +1070,7 @@ async function replaceToken() {
       }
     });
     S.token = token;
-    localStorage.setItem('kyd_creds', JSON.stringify({ user: S.user, role: S.role, note: S.note, token }));
+    lsSet('kyd_creds', JSON.stringify({ user: S.user, role: S.role, note: S.note, token }));
     $('#set-token').value = '';
     fillSetAccount();
     toast('令牌已更换 ✅' + (others ? `(其他 ${others} 个账号需重置密码)` : ''));
@@ -1105,7 +1147,7 @@ async function wzNext() {
       const fresh = freshData(WZ.user);
       const r2 = await putContents(CFG.DATA_REPO, `data/${WZ.user}.json`, fresh, null, WZ.token, 'diary: 初始化数据');
       S.user = WZ.user; S.role = 'admin'; S.token = WZ.token; S.encCtx = ctx;
-      localStorage.setItem('kyd_creds', JSON.stringify({ user: S.user, role: 'admin', token: WZ.token }));
+      lsSet('kyd_creds', JSON.stringify({ user: S.user, role: 'admin', token: WZ.token }));
       closeModal('m-wizard');
       await enterApp();
       toast('初始化完成,开始记录你的研途吧 🎉');
@@ -1176,14 +1218,14 @@ function toast(msg, type = '') {
   setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 320); }, 2600);
 }
 function initTheme() {
-  let t = localStorage.getItem('kyd_theme');
+  let t = lsGet('kyd_theme');
   if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   document.documentElement.dataset.theme = t;
 }
 function toggleTheme() {
   const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = t;
-  localStorage.setItem('kyd_theme', t);
+  lsSet('kyd_theme', t);
 }
 
 /* ============ 13. 事件绑定 ============ */
@@ -1276,7 +1318,7 @@ function bindEvents() {
   $('#timer-subjects').addEventListener('click', e => {
     const c = e.target.closest('.tsub'); if (!c) return;
     S.timerSub = c.dataset.s;
-    localStorage.setItem('kyd_tsub', S.timerSub);
+    lsSet('kyd_tsub', S.timerSub);
     if (!T || !T.running) renderTimer();
   });
   $('#btn-timer-main').addEventListener('click', toggleTimer);
