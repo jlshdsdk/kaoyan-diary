@@ -169,17 +169,23 @@ async function deleteContents(repo, file, sha, token) {
   if (r.status === 404) return; // 已经不存在
   if (!r.ok && r.status !== 401) throw new Error('删除失败 ' + r.status);
 }
-/* 账号表(公开仓库,密文)—— 登录时无需令牌 */
+/* 账号表(公开仓库,密文)—— 登录时无需令牌。文件格式 {version,users:{...}} */
+function unwrapAccounts(parsed) {
+  if (!parsed || typeof parsed !== 'object') return null;
+  if (parsed.users && typeof parsed.users === 'object') return parsed.users;
+  if (parsed.enc) return parsed; // 兼容:裸 users map
+  return null;
+}
 async function readAccounts(token) {
   try {
     const r = await gh(`/repos/${CFG.OWNER}/${CFG.SITE_REPO}/contents/accounts.json`, { token });
     if (r.status === 404) return { users: null, sha: null };
-    if (r.ok) { const j = await r.json(); return { users: JSON.parse(b64d(j.content)), sha: j.sha }; }
+    if (r.ok) { const j = await r.json(); return { users: unwrapAccounts(JSON.parse(b64d(j.content))), sha: j.sha }; }
   } catch (e) { if (token) throw e; }
   // 兜底:raw CDN(无 sha)
   const r2 = await fetch(`https://raw.githubusercontent.com/${CFG.OWNER}/${CFG.SITE_REPO}/${CFG.BRANCH}/accounts.json?_=${Date.now()}`, { cache: 'no-store' });
   if (r2.status === 404) return { users: null, sha: null };
-  if (r2.ok) return { users: await r2.json(), sha: null };
+  if (r2.ok) return { users: unwrapAccounts(await r2.json()), sha: null };
   throw new Error('无法读取账号信息,请检查网络后重试');
 }
 async function validateToken(token) {
@@ -193,7 +199,7 @@ async function validateToken(token) {
     return { ok: false, msg: '令牌无法访问仓库(' + [r1.status, r2.status].join('/') + '),请确认已勾选 kaoyan-diary 与 kaoyan-diary-data 两个仓库,且 Contents 为 Read and write' };
   } catch (e) { return { ok: false, msg: '网络错误:' + e.message }; }
 }
-/* 带 3 次冲突重试的账号表修改(需登录令牌) */
+/* 带 3 次冲突重试的账号表修改(需登录令牌)。文件统一为 {version:1, users:{...}} */
 async function mutateAccounts(token, mutator) {
   for (let i = 0; i < 3; i++) {
     const accs = await readAccounts(token);
@@ -201,7 +207,7 @@ async function mutateAccounts(token, mutator) {
     const before = JSON.stringify(accs.users);
     mutator(accs.users);
     if (JSON.stringify(accs.users) === before) { S.accSha = accs.sha; return; }
-    const r = await putContents(CFG.SITE_REPO, 'accounts.json', accs.users, accs.sha, token, 'chore: 账号管理更新');
+    const r = await putContents(CFG.SITE_REPO, 'accounts.json', { version: 1, users: accs.users }, accs.sha, token, 'chore: 账号管理更新');
     if (!r.conflict) { S.accSha = r.sha; return; }
   }
   throw new Error('保存冲突,请稍后重试');
@@ -321,7 +327,9 @@ async function loadUserData() {
       else S.data = freshData(S.user);
     }
     ensureMeta();
+    S.lastSync = Date.now();
     if (S.dirty) setTimeout(() => syncNow(), 800);
+    else setSync('ok');
   } catch (e) {
     if (e instanceof AuthError) { handleAuthFail(); return; }
     // 网络失败:先用本地缓存进入
@@ -786,6 +794,9 @@ function renderHeatmap() {
   }
   grid.innerHTML = fragParts.join('');
   months.innerHTML = monthParts.join('');
+  // 默认滚动到今天(最右侧)
+  const wrap = grid.closest('.hm-wrap');
+  if (wrap) wrap.scrollLeft = wrap.scrollWidth;
 }
 function heatTip(k, cell) {
   const tip = $('#tooltip');
